@@ -1,0 +1,121 @@
+(function () {
+'use strict';
+
+function createScriptElement(path) {
+    let scriptElement = document.createElement("script");
+    scriptElement.type = "text/javascript";
+    scriptElement.src = path;
+
+    return scriptElement;
+}
+
+/**
+ * @param {string} baseUrl
+ * @param {string[]} scripts
+ */
+function init(baseUrl, scripts) {
+    if (Shopify.Checkout
+        && (Shopify.Checkout.isOrderStatusPage || Shopify.Checkout.page === 'thank_you' || Shopify.Checkout.page === 'checkout_one_thank_you')
+        && Shopify.checkout && Shopify.checkout.order_id
+    ) {
+        let counter = 0;
+        for (let i in scripts) {
+            let scriptElement = createScriptElement(scripts[i]);
+            scriptElement.onload = function () {
+                counter++;
+                if(counter === scripts.length){
+                   injectBox(baseUrl);
+                }
+            };
+
+            document.body.append(scriptElement);
+        }
+    }
+}
+
+/**
+ * Enables input mask. This mask disables input fields, buttons, checkboxes etc.
+ * Mask has z-index of 100, therefore an element that has to be excluded from input mask
+ * has to have z-index greater than 100;
+ */
+function enableInputMask() {
+    document.getElementById('pl-input-mask').classList.add('enabled');
+}
+
+/**
+ * Disables input mask.
+ */
+function disableInputMask() {
+    document.getElementById('pl-input-mask').classList.remove('enabled');
+}
+
+function injectBox(baseUrl) {
+    let contentBox = document.querySelector('.step .section__content .content-box'),
+        packlinkBox = document.createElement('div'),
+        url = baseUrl + (baseUrl.indexOf('?') > 0 ? '&' : '?') + 'shop=' + Shopify.shop
+            + '&order=' + Shopify.checkout.order_id
+            + '&locale=' + Shopify.checkout.customer_locale;
+
+    packlinkBox.classList.add('content-box');
+
+    Packlink.ajaxService.get(
+        url,
+        function (response) {
+            /** @var {{page: string, script: string, selectedId: string}} response */
+            if (response && response.page) {
+                packlinkBox.innerHTML = response.page;
+                let src = document.createElement('script');
+                src.innerHTML = response.script.replace('<script>', '').replace('</script>', '');
+                contentBox.parentNode.insertBefore(packlinkBox, contentBox.nextSibling);
+                contentBox.parentNode.insertBefore(src, contentBox.nextSibling);
+
+                let shouldDisplayDropOff = document.getElementById('pl-display-drop-off').value;
+                if (shouldDisplayDropOff) {
+                    let plMask = document.createElement('div');
+                    plMask.id = 'pl-input-mask';
+                    plMask.classList.add('pl-input-mask');
+                    plMask.classList.add('custom');
+                    document.body.insertBefore(plMask, document.body.firstChild);
+
+                    let closePlMask = document.createElement('div');
+                    closePlMask.id = 'pl-close-mask';
+                    closePlMask.classList.add('pl-close-mask');
+                    closePlMask.classList.add('hidden');
+                    closePlMask.addEventListener('click', function () {
+                        disableInputMask();
+                        closePlMask.classList.add('hidden');
+                    });
+                    document.body.insertBefore(closePlMask, document.body.firstChild);
+
+                    let selectDropOff = document.getElementById('pl-drop-off-button');
+                    selectDropOff.addEventListener('click', function () {
+                        disableInputMask();
+                        closePlMask.classList.add('hidden');
+                    });
+
+                    let closeMaskContent = document.createElement('span');
+                    closeMaskContent.id = 'pl-close-mask-content';
+                    closeMaskContent.classList.add('pl-close-mask-content');
+                    closeMaskContent.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" focusable="false" role="presentation">\n' +
+                        '<path d="M12 10.586L6.707 5.293a1 1 0 0 0-1.414 1.414L10.586 12l-5.293 5.293a1 1 0 0 0 1.414 1.414L12 13.414l5.293 5.293a1 1 0 0 0 1.414-1.414L13.414 12l5.293-5.293a1 1 0 1 0-1.414-1.414L12 10.586z" fill="currentColor"></path>\n' +
+                        '</svg>';
+                    closePlMask.appendChild(closeMaskContent);
+
+                    if (!response.selectedId) {
+                        enableInputMask();
+                        closePlMask.classList.remove('hidden');
+                    }
+                }
+            }
+        }
+    );
+}
+
+
+init(
+"https://packlink-spf-pro.appspot.com/platform/PRO/checkout/thankYou",
+[
+"https://packlink-spf-pro.appspot.com/PRO/admin/js/thankYou.js?v=3.1.5"
+]
+);
+})();

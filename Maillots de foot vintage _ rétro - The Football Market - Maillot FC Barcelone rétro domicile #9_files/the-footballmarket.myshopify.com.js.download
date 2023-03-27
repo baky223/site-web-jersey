@@ -1,0 +1,2 @@
+const trustpilot_trustbox_settings = {"trustboxes":[],"activeTrustbox":0,"pageUrls":{"landing":"https://the-footballmarket.myshopify.com","category":"https://the-footballmarket.myshopify.com/collections/homepage","product":"https://the-footballmarket.myshopify.com/products/cousue-de-fil-bleu"}};
+dispatchEvent(new CustomEvent('trustpilotTrustboxSettingsLoaded'));

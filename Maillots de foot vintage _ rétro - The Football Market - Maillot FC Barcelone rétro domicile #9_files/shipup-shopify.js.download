@@ -1,0 +1,55 @@
+(function() {
+  var cssSrc = 'https://cdn.shipup.co/latest_v2/shipup.css';
+  var jsSrc = 'https://cdn.shipup.co/latest_v2/shipup-js.js';
+  var scriptDomId = 'shipup-script';
+
+  var loadShipupJS = function() {
+    var LoadedShipupJS =
+      'function' == typeof define && define.amd
+        ? require('ShipupJS')
+        : window.ShipupJS;
+    if (LoadedShipupJS && window.Shopify && window.Shopify.shop) {
+      var shipup = new LoadedShipupJS.default(null);
+      var element = document.getElementById('shipup-root');
+      if (element) {
+        var language;
+        var documentLocale =
+          document.documentElement && document.documentElement.lang;
+        if (documentLocale) {
+          language = documentLocale.slice(0, 2);
+        }
+        shipup.render(element, { language: language });
+      }
+    }
+  };
+
+  var addShipupCSS = function() {
+    var head = document.getElementsByTagName('head')[0];
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.type = 'text/css';
+    link.href = cssSrc;
+    link.media = 'all';
+    head.appendChild(link);
+  };
+
+  if (!document.getElementById(scriptDomId)) {
+    var script = document.createElement('script');
+    script.id = scriptDomId;
+    script.type = 'text/javascript';
+    script.async = true;
+    script.src = jsSrc;
+    script.onload = loadShipupJS;
+    var x = document.getElementsByTagName('script')[0];
+    x.parentNode.insertBefore(script, x);
+  }
+
+  var hasCssSrc = function(link) {
+    return link.href.indexOf(cssSrc) > -1;
+  };
+  var linkList = document.getElementsByTagName('link');
+  var links = Array.prototype.slice.call(linkList);
+  if (!Array.prototype.some || !links.some(hasCssSrc)) {
+    addShipupCSS();
+  }
+})();
